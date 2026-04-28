@@ -281,15 +281,21 @@ elif menu == 'Diet Recommendation Demo':
             (df['Proteins'] >= 20)
         ].sort_values(by='Proteins', ascending=False)
 
-        st.dataframe(
-            recommended_meals[
-                [
-                    'Food_Item',
-                    'meal_type',
-                    'Calories',
-                    'Proteins',
-                    'Carbs',
-                    'Fats'
-                ]
-            ].head(10)
-        )
+        # safer column selection (avoid KeyError if some columns do not exist)
+        display_columns = [
+            col for col in [
+                'Food_Item',
+                'meal_type',
+                'Calories',
+                'Proteins',
+                'Carbs',
+                'Fats'
+            ] if col in recommended_meals.columns
+        ]
+
+        if len(display_columns) > 0:
+            st.dataframe(
+                recommended_meals[display_columns].head(10)
+            )
+        else:
+            st.warning('No matching food columns found in dataset. Please check your CSV column names.')
