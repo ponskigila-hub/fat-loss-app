@@ -111,7 +111,7 @@ if menu == "Home":
     st.title("🥗 Fat Loss Diet Recommendation System")
 
     st.write(
-        "Predict your daily calorie needs and get food recommendations for fat loss."
+        "Predict your maintenance calories and get personalized fat-loss meal recommendations."
     )
 
     col1, col2, col3 = st.columns(3)
@@ -420,6 +420,13 @@ elif menu == "Diet Recommendation Demo":
         20.0
     )
 
+    target_fat_loss = st.slider(
+        "Target Fat Loss (%)",
+        1,
+        20,
+        5
+    )
+
     input_data = np.array([[
         age,
         weight,
@@ -440,18 +447,32 @@ elif menu == "Diet Recommendation Demo":
             input_data
         )
 
+        # maintenance calories
         predicted_calories = model.predict(
             input_scaled
         )[0]
 
+        # fat loss calories
+        calorie_deficit = predicted_calories * (
+            target_fat_loss / 100
+        )
+
+        final_calories = (
+            predicted_calories - calorie_deficit
+        )
+
         st.success(
-            f"Recommended Daily Calorie Intake: {round(predicted_calories, 2)} kcal"
+            f"Maintenance Calories: {round(predicted_calories, 2)} kcal"
+        )
+
+        st.info(
+            f"Fat Loss Target Calories: {round(final_calories, 2)} kcal"
         )
 
         st.subheader("🍽 Recommended Diet Menu")
 
         recommended_meals = food_df[
-            (food_df["Caloric Value"] <= predicted_calories / 4) &
+            (food_df["Caloric Value"] <= final_calories / 4) &
             (food_df["Protein"] >= 10) &
             (food_df["Sugars"] <= 10)
         ].sort_values(
