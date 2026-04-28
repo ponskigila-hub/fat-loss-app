@@ -251,7 +251,7 @@ elif menu == 'Model Evaluation':
 # DIET RECOMMENDATION DEMO
 # =====================================
 elif menu == 'Diet Recommendation Demo':
-    st.title('Diet Recommendation Demo')
+    st.title('🥗 Diet Recommendation Demo')
 
     age = st.number_input('Age', 15, 70, 25)
     weight = st.number_input('Weight (kg)', 30, 200, 75)
@@ -268,54 +268,78 @@ elif menu == 'Diet Recommendation Demo':
     ]])
 
     if st.button('Get Recommendation'):
+
+        # load model
         with open('MainModel.pkl', 'rb') as file:
             model = pickle.load(file)
 
+        # load scaler
         with open('scaler.pkl', 'rb') as file:
             scaler = pickle.load(file)
 
+        # scale input
         input_scaled = scaler.transform(input_data)
+
+        # predict calories
         predicted_calories = model.predict(input_scaled)[0]
 
-        st.success(f'Recommended Daily Calorie Intake: {round(predicted_calories, 2)} kcal')
+        st.success(
+            f'Recommended Daily Calorie Intake: {round(predicted_calories, 2)} kcal'
+        )
 
         st.subheader('🍽 Recommended Diet Menu')
 
-        # filter recommended foods first
-        
-        # create cleaned food name dynamically (not original dataset column)
-        recommended_meals['simple_food_name'] = recommended_meals['food_name'].apply(
-            lambda x: str(x).split(',')[0].strip()
+        # STEP 1: filter foods first
+        recommended_meals = food_df[
+            (food_df['calories'] <= predicted_calories / 4) &
+            (food_df['protein'] >= 10)
+        ].sort_values(
+            by='protein',
+            ascending=False
         )
 
-        recommended_meals = food_df[
-            (food_df['calories'] <= predicted_calories/4) &
-            (food_df['protein'] >= 10)
-        ].sort_values(by='protein', ascending=False)
+        # STEP 2: create simplified food names
+        recommended_meals['simple_food_name'] = recommended_meals[
+            'food_name'
+        ].apply(
+            lambda x: str(x).split(',')[1].strip()
+            if len(str(x).split(',')) > 1
+            else str(x)
+        )
 
-        # safer column selection (avoid KeyError if some columns do not exist)
-        display_columns = [
-            col for col in [
-                'simple_food_name',
-                'category',
-                'calories',
-                'protein',
-                'carbs',
-                'fat'
-            ] if col in recommended_meals.columns
-        ]
+        # STEP 3: display
+        st.markdown('### Top Recommended Foods')
 
-        if len(display_columns) > 0:
-            st.markdown('### Top Recommended Foods')
-            st.dataframe(
-                recommended_meals[display_columns].head(10),
-                use_container_width=True
-            )
+        st.dataframe(
+            recommended_meals[
+                [
+                    'simple_food_name',
+                    'category',
+                    'calories',
+                    'protein',
+                    'carbs',
+                    'fat'
+                ]
+            ].head(10),
+            use_container_width=True
+        )
 
-            st.markdown('### Nutrition Summary')
-            col1, col2, col3 = st.columns(3)
-            col1.metric('Avg Protein', round(recommended_meals['protein'].head(10).mean(), 2))
-            col2.metric('Avg Calories', round(recommended_meals['calories'].head(10).mean(), 2))
-            col3.metric('Avg Carbs', round(recommended_meals['carbs'].head(10).mean(), 2))
-        else:
-            st.warning('No matching food columns found in dataset. Please check your CSV column names.')
+        # STEP 4: nutrition summary
+        st.markdown('### Nutrition Summary')
+
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric(
+            'Avg Protein',
+            round(recommended_meals['protein'].head(10).mean(), 2)
+        )
+
+        col2.metric(
+            'Avg Calories',
+            round(recommended_meals['calories'].head(10).mean(), 2)
+        )
+
+        col3.metric(
+            'Avg Carbs',
+            round(recommended_meals['carbs'].head(10).mean(), 2)
+        )
