@@ -30,7 +30,7 @@ def load_data():
 
 @st.cache_data
 def load_food_data():
-    return pd.read_csv('Food_Nutrition_Dataset.csv')
+    return pd.read_csv('food_data.csv')
 
 df = load_data()
 food_df = load_food_data()
@@ -281,6 +281,11 @@ elif menu == 'Diet Recommendation Demo':
 
         st.subheader('Recommended Diet Menu')
 
+        # simplify food names (take main food name before comma)
+        recommended_meals['simple_food_name'] = recommended_meals['food_name'].apply(
+            lambda x: str(x).split(',')[0].strip()
+        )
+
         recommended_meals = food_df[
             (food_df['calories'] <= predicted_calories/4) &
             (food_df['protein'] >= 10)
@@ -289,7 +294,7 @@ elif menu == 'Diet Recommendation Demo':
         # safer column selection (avoid KeyError if some columns do not exist)
         display_columns = [
             col for col in [
-                'food_name',
+                'simple_food_name',
                 'category',
                 'calories',
                 'protein',
