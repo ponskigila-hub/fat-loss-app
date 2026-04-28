@@ -28,7 +28,12 @@ st.set_page_config(
 def load_data():
     return pd.read_csv('Final_data.csv')
 
+@st.cache_data
+def load_food_data():
+    return pd.read_csv('Food_Nutrition_Dataset.csv')
+
 df = load_data()
+food_df = load_food_data()
 
 # =====================================
 # FEATURES & TARGET
@@ -276,9 +281,9 @@ elif menu == 'Diet Recommendation Demo':
 
         st.subheader('Recommended Diet Menu')
 
-        recommended_meals = df[
-            (df['Calories'] <= predicted_calories) &
-            (df['Proteins'] >= 20)
+        recommended_meals = food_df[
+            (food_df['calories'] <= predicted_calories/4) &
+            (food_df['protein'] >= 10)
         ].sort_values(by='Proteins', ascending=False)
 
         # safer column selection (avoid KeyError if some columns do not exist)
