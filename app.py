@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pickle
+import os
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
@@ -22,41 +23,55 @@ st.set_page_config(
 )
 
 # =====================================
-# CUSTOM THEME
+# CUSTOM CSS
 # =====================================
 st.markdown("""
 <style>
-.main {
-    background-color: #F7FFF7;
+[data-testid="stSidebar"] {
+    background: #1B4332;
 }
 
-[data-testid="stSidebar"] {
-    background-color: #1B4332;
+[data-testid="stSidebar"] * {
+    color: white !important;
+}
+
+div[data-testid="stMetric"] {
+    background: white;
+    border: 2px solid #95D5B2;
+    border-radius: 12px;
+    padding: 15px;
+}
+
+.stButton>button {
+    border-radius: 10px;
+    font-weight: 600;
 }
 
 h1, h2, h3 {
     color: #2D6A4F;
 }
-
-.stButton>button {
-    background-color: #40916C;
-    color: white;
-    border-radius: 10px;
-    border: none;
-}
-
-.stButton>button:hover {
-    background-color: #2D6A4F;
-}
-
-[data-testid="metric-container"] {
-    background-color: white;
-    border: 2px solid #95D5B2;
-    padding: 15px;
-    border-radius: 12px;
-}
 </style>
 """, unsafe_allow_html=True)
+
+# =====================================
+# SESSION STATE
+# =====================================
+for key in [
+    "page",
+    "df",
+    "food_df",
+    "X_train",
+    "X_test",
+    "y_train",
+    "y_test",
+    "scaler",
+    "scaler_name",
+    "models",
+    "eval_results"
+]:
+    if key not in st.session_state:
+        st.session_state[key] = "Home" if key == "page" else None
+
 
 # =====================================
 # LOAD DATA
@@ -74,9 +89,9 @@ def load_food_data():
 df = load_main_data()
 food_df = load_food_data()
 
-# =====================================
-# FEATURES & TARGET
-# =====================================
+st.session_state.df = df
+st.session_state.food_df = food_df
+
 features = [
     "Age",
     "Weight (kg)",
@@ -87,105 +102,104 @@ features = [
 
 target = "Calories"
 
-# =====================================
-# SIDEBAR
-# =====================================
-st.sidebar.title("Navigation")
 
-menu = st.sidebar.selectbox(
-    "Choose Page",
-    [
-        "Home",
-        "Exploratory Data Analysis",
-        "Data Preprocessing",
-        "Train Your Model",
-        "Model Evaluation",
-        "Diet Recommendation Demo"
-    ]
-)
+# =====================================
+# HELPER
+# =====================================
+def save_pickle(obj, filename):
+    with open(filename, "wb") as f:
+        pickle.dump(obj, f)
+
+
+def list_saved_pickles():
+    return sorted([f for f in os.listdir(".") if f.endswith(".pkl")])
+
+
+def bmi_category(bmi):
+    if bmi < 18.5:
+        return "Underweight"
+    elif bmi < 25:
+        return "Normal"
+    elif bmi < 30:
+        return "Overweight"
+    else:
+        return "Obese"
+
+
+# =====================================
+# SIDEBAR NAVIGATION
+# =====================================
+with st.sidebar:
+    st.title("🥗 Fat Loss App")
+    st.markdown("Machine Learning Diet Recommendation")
+
+    pages = {
+        "🏠 Home": "Home",
+        "📊 EDA": "EDA",
+        "⚙️ Preprocessing": "Preprocessing",
+        "🤖 Model": "Model",
+        "🍽 Recommendation": "Prediction"
+    }
+
+    for label, page in pages.items():
+        if st.button(label, use_container_width=True):
+            st.session_state.page = page
+            st.rerun()
+
 
 # =====================================
 # HOME
 # =====================================
-if menu == "Home":
+if st.session_state.page == "Home":
     st.title("🥗 Fat Loss Diet Recommendation System")
 
     st.write(
-        "Predict your maintenance calories and get personalized fat-loss meal recommendations."
+        "Predict maintenance calories and generate fat-loss meal recommendations."
     )
 
-    col1, col2, col3 = st.columns(3)
+    c1, c2, c3 = st.columns(3)
 
-    col1.metric(
-        "Total Records",
-        len(df)
-    )
-
-    col2.metric(
-        "Average Calories",
-        round(df[target].mean(), 2)
-    )
-
-    col3.metric(
-        "Average BMI",
-        round(df["BMI"].mean(), 2)
-    )
+    c1.metric("Total Records", len(df))
+    c2.metric("Average Calories", round(df[target].mean(), 2))
+    c3.metric("Average BMI", round(df["BMI"].mean(), 2))
 
     st.subheader("Dataset Preview")
-    st.dataframe(
-        df.head(),
-        use_container_width=True
-    )
+    st.dataframe(df.head(), use_container_width=True)
+
 
 # =====================================
 # EDA
 # =====================================
-elif menu == "Exploratory Data Analysis":
-    st.title("Exploratory Data Analysis")
+elif st.session_state.page == "EDA":
+    st.title("📊 Exploratory Data Analysis")
 
-    st.subheader("Dataset Head")
-    st.dataframe(
-        df.head(),
-        use_container_width=True
-    )
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "Dataset",
+        "Histogram",
+        "Heatmap",
+        "Scatterplot"
+    ])
 
-    st.subheader("Data Types")
-    st.write(df.dtypes)
+    with tab1:
+        st.subheader("Dataset Preview")
+        st.dataframe(df.head(), use_container_width=True)
 
-    show_null = st.checkbox("Show Null Values")
+        st.subheader("Statistical Summary")
+        st.dataframe(df.describe(), use_container_width=True)
 
-    if show_null:
-        st.subheader("Null Values")
-        st.write(df.isnull().sum())
-
-    st.subheader("Statistical Summary")
-    st.write(df.describe())
-
-    chart_option = st.selectbox(
-        "Select Visualization",
-        [
-            "Histogram",
-            "Heatmap",
-            "Scatterplot",
-            "Boxplot"
-        ]
-    )
-
-    selected_feature = st.selectbox(
-        "Select Feature",
-        features
-    )
-
-    if chart_option == "Histogram":
-        fig, ax = plt.subplots()
-        sns.histplot(
-            df[selected_feature],
-            kde=True,
-            ax=ax
+    with tab2:
+        selected_features = st.multiselect(
+            "Select Features",
+            features,
+            default=features[:2]
         )
-        st.pyplot(fig)
 
-    elif chart_option == "Heatmap":
+        for feature in selected_features:
+            fig, ax = plt.subplots()
+            sns.histplot(df[feature], kde=True, ax=ax)
+            st.pyplot(fig)
+
+    with tab3:
         fig, ax = plt.subplots(figsize=(10, 8))
         sns.heatmap(
             df[features + [target]].corr(),
@@ -195,7 +209,12 @@ elif menu == "Exploratory Data Analysis":
         )
         st.pyplot(fig)
 
-    elif chart_option == "Scatterplot":
+    with tab4:
+        selected_feature = st.selectbox(
+            "Select Feature",
+            features
+        )
+
         fig, ax = plt.subplots()
         sns.regplot(
             x=df[selected_feature],
@@ -204,255 +223,237 @@ elif menu == "Exploratory Data Analysis":
         )
         st.pyplot(fig)
 
-    elif chart_option == "Boxplot":
-        fig, ax = plt.subplots()
-        sns.boxplot(
-            x=df[selected_feature],
-            ax=ax
-        )
-        st.pyplot(fig)
 
 # =====================================
 # PREPROCESSING
 # =====================================
-elif menu == "Data Preprocessing":
-    st.title("Data Preprocessing")
+elif st.session_state.page == "Preprocessing":
+    st.title("⚙️ Data Preprocessing")
 
-    test_size = st.slider(
-        "Test Size",
-        0.1,
-        0.5,
-        0.2,
-        0.05
-    )
+    c1, c2 = st.columns(2)
 
-    random_state = st.number_input(
-        "Random State",
-        min_value=1,
-        max_value=999,
-        value=42
-    )
+    with c1:
+        test_size = st.slider(
+            "Test Size (%)",
+            10,
+            40,
+            20
+        )
 
-    scaler_option = st.selectbox(
-        "Select Scaler",
+    with c2:
+        random_state = st.number_input(
+            "Random State",
+            1,
+            999,
+            42
+        )
+
+    scaler_option = st.radio(
+        "Choose Scaler",
         [
             "StandardScaler",
             "MinMaxScaler"
         ]
     )
 
-    X = df[features]
-    y = df[target]
+    if st.button("Run Preprocessing"):
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=test_size,
-        random_state=random_state
-    )
+        X = df[features]
+        y = df[target]
 
-    if scaler_option == "StandardScaler":
-        scaler = StandardScaler()
-    else:
-        scaler = MinMaxScaler()
+        X_train, X_test, y_train, y_test = train_test_split(
+            X,
+            y,
+            test_size=test_size / 100,
+            random_state=random_state
+        )
 
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-
-    with open("scaler.pkl", "wb") as file:
-        pickle.dump(scaler, file)
-
-    st.success("Preprocessing completed successfully!")
-
-    st.write("Training Shape:", X_train_scaled.shape)
-    st.write("Testing Shape:", X_test_scaled.shape)
-
-# =====================================
-# TRAIN MODEL
-# =====================================
-elif menu == "Train Your Model":
-    st.title("Train Your Model")
-
-    model_option = st.selectbox(
-        "Choose Model",
-        [
-            "Linear Regression (Baseline)",
-            "Random Forest Regressor (Proposed)",
-            "SVR (Alternative)"
-        ]
-    )
-
-    X = df[features]
-    y = df[target]
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=0.2,
-        random_state=42
-    )
-
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-
-    if st.button("Train Model"):
-
-        if "Linear Regression" in model_option:
-            model = LinearRegression()
-
-        elif "Random Forest" in model_option:
-            model = RandomForestRegressor()
-
+        if scaler_option == "StandardScaler":
+            scaler = StandardScaler()
         else:
-            model = SVR()
+            scaler = MinMaxScaler()
 
-        model.fit(
-            X_train_scaled,
-            y_train
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
+
+        st.session_state.X_train = X_train_scaled
+        st.session_state.X_test = X_test_scaled
+        st.session_state.y_train = y_train
+        st.session_state.y_test = y_test
+        st.session_state.scaler = scaler
+        st.session_state.scaler_name = scaler_option
+
+        st.success("Preprocessing Completed!")
+
+        st.dataframe(
+            pd.DataFrame(
+                X_train_scaled,
+                columns=features
+            ).head()
         )
 
-        with open("MainModel.pkl", "wb") as file:
-            pickle.dump(model, file)
-
-        with open("scaler.pkl", "wb") as file:
-            pickle.dump(scaler, file)
-
-        st.success(
-            f"{model_option} trained successfully!"
-        )
 
 # =====================================
-# MODEL EVALUATION
+# MODEL
 # =====================================
-elif menu == "Model Evaluation":
-    st.title("Model Evaluation")
+elif st.session_state.page == "Model":
+    st.title("🤖 Model Training & Evaluation")
 
-    X = df[features]
-    y = df[target]
+    if st.session_state.X_train is None:
+        st.warning("Run preprocessing first.")
+        st.stop()
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=0.2,
-        random_state=42
+    selected_models = st.multiselect(
+        "Select Models",
+        [
+            "Linear Regression",
+            "Random Forest",
+            "SVR"
+        ],
+        default=["Linear Regression"]
     )
 
-    with open("scaler.pkl", "rb") as file:
-        scaler = pickle.load(file)
+    if st.button("Train & Evaluate"):
 
-    with open("MainModel.pkl", "rb") as file:
-        model = pickle.load(file)
+        results = {}
+        trained_models = {}
 
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
+        progress = st.progress(0)
 
-    y_pred = model.predict(X_test_scaled)
+        for i, model_name in enumerate(selected_models):
+
+            progress.progress((i + 1) / len(selected_models))
+
+            if model_name == "Linear Regression":
+                model = LinearRegression()
+
+            elif model_name == "Random Forest":
+                model = RandomForestRegressor()
+
+            else:
+                model = SVR()
+
+            model.fit(
+                st.session_state.X_train,
+                st.session_state.y_train
+            )
+
+            y_pred = model.predict(
+                st.session_state.X_test
+            )
+
+            results[model_name] = {
+                "R2": r2_score(
+                    st.session_state.y_test,
+                    y_pred
+                ),
+                "MAE": mean_absolute_error(
+                    st.session_state.y_test,
+                    y_pred
+                ),
+                "MSE": mean_squared_error(
+                    st.session_state.y_test,
+                    y_pred
+                ),
+                "RMSE": np.sqrt(
+                    mean_squared_error(
+                        st.session_state.y_test,
+                        y_pred
+                    )
+                )
+            }
+
+            trained_models[model_name] = model
+
+        st.session_state.models = trained_models
+        st.session_state.eval_results = results
+
+    if st.session_state.eval_results:
+
+        results_df = pd.DataFrame(
+            st.session_state.eval_results
+        ).T
+
+        st.subheader("Evaluation Results")
+        st.dataframe(results_df)
+
+        save_model = st.selectbox(
+            "Save Which Model?",
+            list(st.session_state.models.keys())
+        )
+
+        if st.button("Save Model"):
+            save_pickle(
+                st.session_state.models[save_model],
+                "MainModel.pkl"
+            )
+
+            save_pickle(
+                st.session_state.scaler,
+                "scaler.pkl"
+            )
+
+            st.success("Model and Scaler Saved!")
+
+
+# =====================================
+# PREDICTION
+# =====================================
+elif st.session_state.page == "Prediction":
+    st.title("🍽 Diet Recommendation")
+
+    model_files = list_saved_pickles()
+
+    if "MainModel.pkl" not in model_files:
+        st.warning("Train and save model first.")
+        st.stop()
+
+    with open("MainModel.pkl", "rb") as f:
+        model = pickle.load(f)
+
+    with open("scaler.pkl", "rb") as f:
+        scaler = pickle.load(f)
 
     col1, col2 = st.columns(2)
-    col3, col4 = st.columns(2)
 
-    col1.metric(
-        "R² Score",
-        round(r2_score(y_test, y_pred), 4)
-    )
+    with col1:
+        age = st.number_input("Age", 15, 70, 25)
+        weight = st.number_input("Weight (kg)", 30, 200, 75)
+        height = st.number_input("Height (m)", 1.0, 2.5, 1.75)
 
-    col2.metric(
-        "MAE",
-        round(mean_absolute_error(y_test, y_pred), 4)
-    )
-
-    col3.metric(
-        "MSE",
-        round(mean_squared_error(y_test, y_pred), 4)
-    )
-
-    col4.metric(
-        "RMSE",
-        round(
-            np.sqrt(
-                mean_squared_error(
-                    y_test,
-                    y_pred
-                )
-            ),
-            4
+    with col2:
+        bmi = st.number_input("BMI", 10.0, 50.0, 24.0)
+        fat_percentage = st.number_input(
+            "Fat Percentage",
+            5.0,
+            50.0,
+            20.0
         )
-    )
-
-# =====================================
-# DIET RECOMMENDATION DEMO
-# =====================================
-elif menu == "Diet Recommendation Demo":
-    st.title("Diet Recommendation Demo")
-
-    age = st.number_input(
-        "Age",
-        15,
-        70,
-        25
-    )
-
-    weight = st.number_input(
-        "Weight (kg)",
-        30,
-        200,
-        75
-    )
-
-    height = st.number_input(
-        "Height (m)",
-        1.0,
-        2.5,
-        1.75
-    )
-
-    bmi = st.number_input(
-        "BMI",
-        10.0,
-        50.0,
-        24.0
-    )
-
-    fat_percentage = st.number_input(
-        "Fat Percentage",
-        5.0,
-        50.0,
-        20.0
-    )
-
-    target_fat_loss = st.slider(
-        "Target Fat Loss (%)",
-        1,
-        20,
-        5
-    )
-
-    input_data = np.array([[
-        age,
-        weight,
-        height,
-        bmi,
-        fat_percentage
-    ]])
+        target_fat_loss = st.slider(
+            "Target Fat Loss (%)",
+            1,
+            20,
+            5
+        )
 
     if st.button("Get Recommendation"):
 
-        with open("MainModel.pkl", "rb") as file:
-            model = pickle.load(file)
-
-        with open("scaler.pkl", "rb") as file:
-            scaler = pickle.load(file)
+        input_data = np.array([[
+            age,
+            weight,
+            height,
+            bmi,
+            fat_percentage
+        ]])
 
         input_scaled = scaler.transform(
             input_data
         )
 
-        # maintenance calories
         predicted_calories = model.predict(
             input_scaled
         )[0]
 
-        # fat loss calories
         calorie_deficit = predicted_calories * (
             target_fat_loss / 100
         )
@@ -461,15 +462,46 @@ elif menu == "Diet Recommendation Demo":
             predicted_calories - calorie_deficit
         )
 
-        st.success(
-            f"Maintenance Calories: {round(predicted_calories, 2)} kcal"
+        category = bmi_category(bmi)
+
+        c1, c2, c3 = st.columns(3)
+
+        c1.metric(
+            "Maintenance Calories",
+            round(predicted_calories, 2)
         )
 
-        st.info(
-            f"Fat Loss Target Calories: {round(final_calories, 2)} kcal"
+        c2.metric(
+            "Fat Loss Calories",
+            round(final_calories, 2)
         )
 
-        st.subheader("🍽 Recommended Diet Menu")
+        c3.metric(
+            "BMI Category",
+            category
+        )
+
+        chart_df = pd.DataFrame({
+            "Type": [
+                "Maintenance",
+                "Fat Loss"
+            ],
+            "Calories": [
+                predicted_calories,
+                final_calories
+            ]
+        })
+
+        fig, ax = plt.subplots()
+        sns.barplot(
+            data=chart_df,
+            x="Type",
+            y="Calories",
+            ax=ax
+        )
+        st.pyplot(fig)
+
+        st.subheader("🍽 Recommended Meals")
 
         recommended_meals = food_df[
             (food_df["Caloric Value"] <= final_calories / 4) &
@@ -480,18 +512,13 @@ elif menu == "Diet Recommendation Demo":
             ascending=False
         )
 
-        st.dataframe(
-            recommended_meals[
-                [
-                    "food",
-                    "Caloric Value",
-                    "Protein",
-                    "Carbohydrates",
-                    "Fat",
-                    "Sugars",
-                    "Dietary Fiber",
-                    "Nutrition Density"
-                ]
-            ].head(10),
-            use_container_width=True
-        )
+        for _, row in recommended_meals.head(5).iterrows():
+            st.markdown(f"""
+            ### 🍽 {row["food"]}
+            Calories: {row["Caloric Value"]} kcal  
+            Protein: {row["Protein"]} g  
+            Carbs: {row["Carbohydrates"]} g  
+            Fat: {row["Fat"]} g  
+            Sugar: {row["Sugars"]} g  
+            Fiber: {row["Dietary Fiber"]} g  
+            """)
