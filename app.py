@@ -30,7 +30,7 @@ def load_data():
 
 @st.cache_data
 def load_food_data():
-    return pd.read_csv('food_data.csv')
+    return pd.read_csv('Food_Nutrition_Dataset.csv')
 
 df = load_data()
 food_df = load_food_data()
