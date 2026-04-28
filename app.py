@@ -492,16 +492,8 @@ elif st.session_state.page == "Prediction":
             ]
         })
 
-        fig, ax = plt.subplots()
-        sns.barplot(
-            data=chart_df,
-            x="Type",
-            y="Calories",
-            ax=ax
-        )
-        st.pyplot(fig)
 
-        st.subheader("🍽 Recommended Meals")
+        st.subheader("Recommended Meals")
 
         recommended_meals = food_df[
             (food_df["Caloric Value"] <= final_calories / 4) &
