@@ -30,7 +30,7 @@ def load_data():
 
 @st.cache_data
 def load_food_data():
-    return pd.read_csv('food_data.csv')
+    return pd.read_csv('Food_Nutrition_Dataset.csv')
 
 df = load_data()
 food_df = load_food_data()
@@ -291,7 +291,7 @@ elif menu == 'Diet Recommendation Demo':
         recommended_meals = food_df[
             (food_df['calories'] <= predicted_calories/4) &
             (food_df['protein'] >= 10)
-        ].sort_values(by='Proteins', ascending=False)
+        ].sort_values(by='protein', ascending=False)
 
         # safer column selection (avoid KeyError if some columns do not exist)
         display_columns = [
