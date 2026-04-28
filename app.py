@@ -31,21 +31,7 @@ def load_main_data():
 
 @st.cache_data
 def load_food_data():
-    food_group1 = pd.read_csv("FOOD-DATA-GROUP1.csv")
-    food_group5 = pd.read_csv("FOOD-DATA-GROUP5.csv")
-
-    # merge datasets
-    food_df = pd.concat(
-        [food_group1, food_group5],
-        ignore_index=True
-    )
-
-    # remove duplicates
-    food_df = food_df.drop_duplicates(
-        subset=["food"]
-    )
-
-    return food_df
+    return pd.read_csv('FOOD-DATA-GROUP1.csv')
 
 
 df = load_main_data()
