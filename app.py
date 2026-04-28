@@ -126,9 +126,11 @@ elif menu == 'Exploratory Data Analysis':
 elif menu == 'Data Preprocessing':
     st.title('Data Preprocessing')
 
-    test_size = st.slider('Test Size', 0.1, 0.5, 0.2)
-    random_state = st.slider('Random State', 1, 100, 42)
+    st.subheader('Split Configuration')
+    test_size = st.slider('Test Size', 0.1, 0.5, 0.2, 0.05)
+    random_state = st.number_input('Random State', min_value=1, max_value=999, value=42)
 
+    st.subheader('Scaler Configuration')
     scaler_option = st.selectbox(
         'Select Scaler',
         ['StandardScaler', 'MinMaxScaler']
@@ -138,7 +140,8 @@ elif menu == 'Data Preprocessing':
     y = df[target]
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y,
+        X,
+        y,
         test_size=test_size,
         random_state=random_state
     )
@@ -154,9 +157,14 @@ elif menu == 'Data Preprocessing':
     with open('scaler.pkl', 'wb') as file:
         pickle.dump(scaler, file)
 
-    st.success('Preprocessing completed')
-    st.write('Train shape:', X_train_scaled.shape)
-    st.write('Test shape:', X_test_scaled.shape)
+    st.success('Preprocessing completed successfully!')
+
+    st.write('Selected Test Size:', test_size)
+    st.write('Selected Random State:', random_state)
+    st.write('Selected Scaler:', scaler_option)
+
+    st.write('Training Data Shape:', X_train_scaled.shape)
+    st.write('Testing Data Shape:', X_test_scaled.shape)
 
 # =====================================
 # TRAIN MODEL
