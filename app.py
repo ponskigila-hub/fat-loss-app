@@ -16,129 +16,207 @@ from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 # PAGE CONFIG
 # =====================================
 st.set_page_config(
-    page_title='Fat Loss Diet Recommendation',
-    page_icon='🥗',
-    layout='wide'
+    page_title="Fat Loss Diet Recommendation",
+    page_icon="🥗",
+    layout="wide"
 )
 
 # =====================================
 # LOAD DATA
 # =====================================
 @st.cache_data
-def load_data():
-    return pd.read_csv('Final_data.csv')
+def load_main_data():
+    return pd.read_csv("Final_data.csv")
+
 
 @st.cache_data
 def load_food_data():
-    return pd.read_csv('Food_Nutrition_Dataset.csv')
+    food_group1 = pd.read_csv("FOOD-DATA-GROUP1.csv")
+    food_group5 = pd.read_csv("FOOD-DATA-GROUP5.csv")
 
-df = load_data()
+    # merge datasets
+    food_df = pd.concat(
+        [food_group1, food_group5],
+        ignore_index=True
+    )
+
+    # remove duplicates
+    food_df = food_df.drop_duplicates(
+        subset=["food"]
+    )
+
+    return food_df
+
+
+df = load_main_data()
 food_df = load_food_data()
 
 # =====================================
 # FEATURES & TARGET
 # =====================================
 features = [
-    'Age',
-    'Weight (kg)',
-    'Height (m)',
-    'BMI',
-    'Fat_Percentage'
+    "Age",
+    "Weight (kg)",
+    "Height (m)",
+    "BMI",
+    "Fat_Percentage"
 ]
 
-target = 'Calories'
+target = "Calories"
 
 # =====================================
-# SIDEBAR MENU
+# SIDEBAR
 # =====================================
-st.sidebar.title('Navigation')
+st.sidebar.title("Navigation")
+
 menu = st.sidebar.selectbox(
-    'Choose Page',
+    "Choose Page",
     [
-        'Home',
-        'Exploratory Data Analysis',
-        'Data Preprocessing',
-        'Train Your Model',
-        'Model Evaluation',
-        'Diet Recommendation Demo'
+        "Home",
+        "Exploratory Data Analysis",
+        "Data Preprocessing",
+        "Train Your Model",
+        "Model Evaluation",
+        "Diet Recommendation Demo"
     ]
 )
 
 # =====================================
 # HOME
 # =====================================
-if menu == 'Home':
-    st.title('🥗 Personalized Fat Loss Diet Recommendation System')
-    st.write('Predict your recommended calorie intake and get healthy meal recommendations.')
+if menu == "Home":
+    st.title("🥗 Fat Loss Diet Recommendation System")
+
+    st.markdown("""
+    This application predicts your **daily calorie needs**
+    and recommends foods suitable for **fat loss goals**.
+    """)
 
     col1, col2, col3 = st.columns(3)
-    col1.metric('Total Records', len(df))
-    col2.metric('Average Calories', round(df[target].mean(), 2))
-    col3.metric('Average BMI', round(df['BMI'].mean(), 2))
 
-    st.subheader('Dataset Preview')
-    st.dataframe(df.head())
+    col1.metric(
+        "Total Records",
+        len(df)
+    )
+
+    col2.metric(
+        "Average Calories",
+        round(df[target].mean(), 2)
+    )
+
+    col3.metric(
+        "Average BMI",
+        round(df["BMI"].mean(), 2)
+    )
+
+    st.subheader("Dataset Preview")
+    st.dataframe(
+        df.head(),
+        use_container_width=True
+    )
 
 # =====================================
 # EDA
 # =====================================
-elif menu == 'Exploratory Data Analysis':
-    st.title('Exploratory Data Analysis')
+elif menu == "Exploratory Data Analysis":
+    st.title("Exploratory Data Analysis")
 
-    st.subheader('Dataset Head')
-    st.dataframe(df.head())
+    st.subheader("Dataset Head")
+    st.dataframe(
+        df.head(),
+        use_container_width=True
+    )
 
-    st.subheader('Data Types')
+    st.subheader("Data Types")
     st.write(df.dtypes)
 
-    show_null = st.checkbox('Show Null Values')
+    show_null = st.checkbox("Show Null Values")
+
     if show_null:
+        st.subheader("Null Values")
         st.write(df.isnull().sum())
 
-    st.subheader('Statistical Summary')
+    st.subheader("Statistical Summary")
     st.write(df.describe())
 
     chart_option = st.selectbox(
-        'Select Visualization',
-        ['Histogram', 'Heatmap', 'Scatterplot', 'Boxplot']
+        "Select Visualization",
+        [
+            "Histogram",
+            "Heatmap",
+            "Scatterplot",
+            "Boxplot"
+        ]
     )
 
-    selected_feature = st.selectbox('Select Feature', features)
+    selected_feature = st.selectbox(
+        "Select Feature",
+        features
+    )
 
-    if chart_option == 'Histogram':
+    if chart_option == "Histogram":
         fig, ax = plt.subplots()
-        sns.histplot(df[selected_feature], kde=True, ax=ax)
+        sns.histplot(
+            df[selected_feature],
+            kde=True,
+            ax=ax
+        )
         st.pyplot(fig)
 
-    elif chart_option == 'Heatmap':
-        fig, ax = plt.subplots(figsize=(12, 8))
-        sns.heatmap(df[features + [target]].corr(), annot=True, cmap='coolwarm', ax=ax)
+    elif chart_option == "Heatmap":
+        fig, ax = plt.subplots(figsize=(10, 8))
+        sns.heatmap(
+            df[features + [target]].corr(),
+            annot=True,
+            cmap="coolwarm",
+            ax=ax
+        )
         st.pyplot(fig)
 
-    elif chart_option == 'Scatterplot':
+    elif chart_option == "Scatterplot":
         fig, ax = plt.subplots()
-        sns.regplot(x=df[selected_feature], y=df[target], ax=ax)
+        sns.regplot(
+            x=df[selected_feature],
+            y=df[target],
+            ax=ax
+        )
         st.pyplot(fig)
 
-    elif chart_option == 'Boxplot':
+    elif chart_option == "Boxplot":
         fig, ax = plt.subplots()
-        sns.boxplot(x=df[selected_feature], ax=ax)
+        sns.boxplot(
+            x=df[selected_feature],
+            ax=ax
+        )
         st.pyplot(fig)
 
 # =====================================
 # PREPROCESSING
 # =====================================
-elif menu == 'Data Preprocessing':
-    st.title('Data Preprocessing')
+elif menu == "Data Preprocessing":
+    st.title("Data Preprocessing")
 
-    st.subheader('Split Configuration')
-    test_size = st.slider('Test Size', 0.1, 0.5, 0.2, 0.05)
-    random_state = st.number_input('Random State', min_value=1, max_value=999, value=42)
+    test_size = st.slider(
+        "Test Size",
+        0.1,
+        0.5,
+        0.2,
+        0.05
+    )
 
-    st.subheader('Scaler Configuration')
+    random_state = st.number_input(
+        "Random State",
+        min_value=1,
+        max_value=999,
+        value=42
+    )
+
     scaler_option = st.selectbox(
-        'Select Scaler',
-        ['StandardScaler', 'MinMaxScaler']
+        "Select Scaler",
+        [
+            "StandardScaler",
+            "MinMaxScaler"
+        ]
     )
 
     X = df[features]
@@ -151,7 +229,7 @@ elif menu == 'Data Preprocessing':
         random_state=random_state
     )
 
-    if scaler_option == 'StandardScaler':
+    if scaler_option == "StandardScaler":
         scaler = StandardScaler()
     else:
         scaler = MinMaxScaler()
@@ -159,30 +237,26 @@ elif menu == 'Data Preprocessing':
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    with open('scaler.pkl', 'wb') as file:
+    with open("scaler.pkl", "wb") as file:
         pickle.dump(scaler, file)
 
-    st.success('Preprocessing completed successfully!')
+    st.success("Preprocessing completed successfully!")
 
-    st.write('Selected Test Size:', test_size)
-    st.write('Selected Random State:', random_state)
-    st.write('Selected Scaler:', scaler_option)
-
-    st.write('Training Data Shape:', X_train_scaled.shape)
-    st.write('Testing Data Shape:', X_test_scaled.shape)
+    st.write("Training Shape:", X_train_scaled.shape)
+    st.write("Testing Shape:", X_test_scaled.shape)
 
 # =====================================
 # TRAIN MODEL
 # =====================================
-elif menu == 'Train Your Model':
-    st.title('Train Your Model')
+elif menu == "Train Your Model":
+    st.title("Train Your Model")
 
     model_option = st.selectbox(
-        'Select Model',
+        "Choose Model",
         [
-            'Linear Regression (Baseline)',
-            'Random Forest Regressor (Proposed)',
-            'SVR (Alternative)'
+            "Linear Regression (Baseline)",
+            "Random Forest (Proposed)",
+            "SVR (Alternative)"
         ]
     )
 
@@ -190,74 +264,149 @@ elif menu == 'Train Your Model':
     y = df[target]
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y,
+        X,
+        y,
         test_size=0.2,
         random_state=42
     )
 
     scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
+    X_train_scaled = scaler.fit_transform(X_train)
 
-    if st.button('Train Model'):
-        if 'Linear Regression' in model_option:
+    if st.button("Train Model"):
+
+        if "Linear Regression" in model_option:
             model = LinearRegression()
-        elif 'Random Forest' in model_option:
+
+        elif "Random Forest" in model_option:
             model = RandomForestRegressor()
+
         else:
             model = SVR()
 
-        model.fit(X_train, y_train)
+        model.fit(
+            X_train_scaled,
+            y_train
+        )
 
-        with open('MainModel.pkl', 'wb') as file:
+        with open("MainModel.pkl", "wb") as file:
             pickle.dump(model, file)
 
-        with open('scaler.pkl', 'wb') as file:
+        with open("scaler.pkl", "wb") as file:
             pickle.dump(scaler, file)
 
-        st.success('Model trained and saved successfully!')
+        st.success(
+            f"{model_option} trained successfully!"
+        )
 
 # =====================================
 # MODEL EVALUATION
 # =====================================
-elif menu == 'Model Evaluation':
-    st.title('Model Evaluation')
+elif menu == "Model Evaluation":
+    st.title("Model Evaluation")
 
     X = df[features]
     y = df[target]
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y,
+        X,
+        y,
         test_size=0.2,
         random_state=42
     )
 
     scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
 
-    with open('MainModel.pkl', 'rb') as file:
-        model = pickle.load(file)
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
 
-    y_pred = model.predict(X_test)
+    models = {
+        "Linear Regression": LinearRegression(),
+        "Random Forest": RandomForestRegressor(),
+        "SVR": SVR()
+    }
 
-    st.subheader('Evaluation Metrics')
-    st.write('Selected Model Evaluation')
-    st.write('R2 Score:', r2_score(y_test, y_pred))
-    st.write('MAE:', mean_absolute_error(y_test, y_pred))
-    st.write('MSE:', mean_squared_error(y_test, y_pred))
-    st.write('RMSE:', np.sqrt(mean_squared_error(y_test, y_pred)))
+    results = []
+
+    for name, model in models.items():
+        model.fit(
+            X_train_scaled,
+            y_train
+        )
+
+        y_pred = model.predict(
+            X_test_scaled
+        )
+
+        results.append({
+            "Model": name,
+            "R2 Score": r2_score(
+                y_test,
+                y_pred
+            ),
+            "MAE": mean_absolute_error(
+                y_test,
+                y_pred
+            ),
+            "MSE": mean_squared_error(
+                y_test,
+                y_pred
+            ),
+            "RMSE": np.sqrt(
+                mean_squared_error(
+                    y_test,
+                    y_pred
+                )
+            )
+        })
+
+    results_df = pd.DataFrame(results)
+
+    st.dataframe(
+        results_df,
+        use_container_width=True
+    )
 
 # =====================================
-# DIET RECOMMENDATION DEMO
+# DIET RECOMMENDATION
 # =====================================
-elif menu == 'Diet Recommendation Demo':
-    st.title('🥗 Diet Recommendation Demo')
+elif menu == "Diet Recommendation Demo":
+    st.title("Diet Recommendation Demo")
 
-    age = st.number_input('Age', 15, 70, 25)
-    weight = st.number_input('Weight (kg)', 30, 200, 75)
-    height = st.number_input('Height (m)', 1.0, 2.5, 1.75)
-    bmi = st.number_input('BMI', 10.0, 50.0, 24.0)
-    fat_percentage = st.number_input('Fat Percentage', 5.0, 50.0, 20.0)
+    age = st.number_input(
+        "Age",
+        15,
+        70,
+        25
+    )
+
+    weight = st.number_input(
+        "Weight (kg)",
+        30,
+        200,
+        75
+    )
+
+    height = st.number_input(
+        "Height (m)",
+        1.0,
+        2.5,
+        1.75
+    )
+
+    bmi = st.number_input(
+        "BMI",
+        10.0,
+        50.0,
+        24.0
+    )
+
+    fat_percentage = st.number_input(
+        "Fat Percentage",
+        5.0,
+        50.0,
+        20.0
+    )
 
     input_data = np.array([[
         age,
@@ -267,79 +416,50 @@ elif menu == 'Diet Recommendation Demo':
         fat_percentage
     ]])
 
-    if st.button('Get Recommendation'):
+    if st.button("Get Recommendation"):
 
-        # load model
-        with open('MainModel.pkl', 'rb') as file:
+        with open("MainModel.pkl", "rb") as file:
             model = pickle.load(file)
 
-        # load scaler
-        with open('scaler.pkl', 'rb') as file:
+        with open("scaler.pkl", "rb") as file:
             scaler = pickle.load(file)
 
-        # scale input
-        input_scaled = scaler.transform(input_data)
+        input_scaled = scaler.transform(
+            input_data
+        )
 
-        # predict calories
-        predicted_calories = model.predict(input_scaled)[0]
+        predicted_calories = model.predict(
+            input_scaled
+        )[0]
 
         st.success(
-            f'Recommended Daily Calorie Intake: {round(predicted_calories, 2)} kcal'
+            f"Recommended Daily Calorie Intake: {round(predicted_calories, 2)} kcal"
         )
 
-        st.subheader('🍽 Recommended Diet Menu')
+        st.subheader("🍽 Recommended Diet Menu")
 
-        # STEP 1: filter foods first
+        # food recommendation logic
         recommended_meals = food_df[
-            (food_df['calories'] <= predicted_calories / 4) &
-            (food_df['protein'] >= 10)
+            (food_df["Caloric Value"] <= predicted_calories / 4) &
+            (food_df["Protein"] >= 10) &
+            (food_df["Sugars"] <= 10)
         ].sort_values(
-            by='protein',
+            by=["Nutrition Density", "Protein"],
             ascending=False
         )
-
-        # STEP 2: create simplified food names
-        recommended_meals['simple_food_name'] = recommended_meals[
-            'food_name'
-        ].apply(
-            lambda x: str(x).split(',')[1].strip()
-            if len(str(x).split(',')) > 1
-            else str(x)
-        )
-
-        # STEP 3: display
-        st.markdown('### Top Recommended Foods')
 
         st.dataframe(
             recommended_meals[
                 [
-                    'simple_food_name',
-                    'category',
-                    'calories',
-                    'protein',
-                    'carbs',
-                    'fat'
+                    "food",
+                    "Caloric Value",
+                    "Protein",
+                    "Carbohydrates",
+                    "Fat",
+                    "Sugars",
+                    "Dietary Fiber",
+                    "Nutrition Density"
                 ]
             ].head(10),
             use_container_width=True
-        )
-
-        # STEP 4: nutrition summary
-        st.markdown('### Nutrition Summary')
-
-        col1, col2, col3 = st.columns(3)
-
-        col1.metric(
-            'Avg Protein',
-            round(recommended_meals['protein'].head(10).mean(), 2)
-        )
-
-        col2.metric(
-            'Avg Calories',
-            round(recommended_meals['calories'].head(10).mean(), 2)
-        )
-
-        col3.metric(
-            'Avg Carbs',
-            round(recommended_meals['carbs'].head(10).mean(), 2)
         )
