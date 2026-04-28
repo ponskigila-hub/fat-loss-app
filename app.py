@@ -22,6 +22,43 @@ st.set_page_config(
 )
 
 # =====================================
+# CUSTOM THEME
+# =====================================
+st.markdown("""
+<style>
+.main {
+    background-color: #F7FFF7;
+}
+
+[data-testid="stSidebar"] {
+    background-color: #1B4332;
+}
+
+h1, h2, h3 {
+    color: #2D6A4F;
+}
+
+.stButton>button {
+    background-color: #40916C;
+    color: white;
+    border-radius: 10px;
+    border: none;
+}
+
+.stButton>button:hover {
+    background-color: #2D6A4F;
+}
+
+[data-testid="metric-container"] {
+    background-color: white;
+    border: 2px solid #95D5B2;
+    padding: 15px;
+    border-radius: 12px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# =====================================
 # LOAD DATA
 # =====================================
 @st.cache_data
@@ -31,7 +68,7 @@ def load_main_data():
 
 @st.cache_data
 def load_food_data():
-    return pd.read_csv('FOOD-DATA-GROUP1.csv')
+    return pd.read_csv("FOOD-DATA-GROUP5.csv")
 
 
 df = load_main_data()
@@ -73,10 +110,9 @@ menu = st.sidebar.selectbox(
 if menu == "Home":
     st.title("🥗 Fat Loss Diet Recommendation System")
 
-    st.markdown("""
-    This application predicts your **daily calorie needs**
-    and recommends foods suitable for **fat loss goals**.
-    """)
+    st.write(
+        "Predict your daily calorie needs and get food recommendations for fat loss."
+    )
 
     col1, col2, col3 = st.columns(3)
 
@@ -241,7 +277,7 @@ elif menu == "Train Your Model":
         "Choose Model",
         [
             "Linear Regression (Baseline)",
-            "Random Forest (Proposed)",
+            "Random Forest Regressor (Proposed)",
             "SVR (Alternative)"
         ]
     )
@@ -301,60 +337,50 @@ elif menu == "Model Evaluation":
         random_state=42
     )
 
-    scaler = StandardScaler()
+    with open("scaler.pkl", "rb") as file:
+        scaler = pickle.load(file)
+
+    with open("MainModel.pkl", "rb") as file:
+        model = pickle.load(file)
 
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    models = {
-        "Linear Regression": LinearRegression(),
-        "Random Forest": RandomForestRegressor(),
-        "SVR": SVR()
-    }
+    y_pred = model.predict(X_test_scaled)
 
-    results = []
+    col1, col2 = st.columns(2)
+    col3, col4 = st.columns(2)
 
-    for name, model in models.items():
-        model.fit(
-            X_train_scaled,
-            y_train
-        )
+    col1.metric(
+        "R² Score",
+        round(r2_score(y_test, y_pred), 4)
+    )
 
-        y_pred = model.predict(
-            X_test_scaled
-        )
+    col2.metric(
+        "MAE",
+        round(mean_absolute_error(y_test, y_pred), 4)
+    )
 
-        results.append({
-            "Model": name,
-            "R2 Score": r2_score(
-                y_test,
-                y_pred
-            ),
-            "MAE": mean_absolute_error(
-                y_test,
-                y_pred
-            ),
-            "MSE": mean_squared_error(
-                y_test,
-                y_pred
-            ),
-            "RMSE": np.sqrt(
+    col3.metric(
+        "MSE",
+        round(mean_squared_error(y_test, y_pred), 4)
+    )
+
+    col4.metric(
+        "RMSE",
+        round(
+            np.sqrt(
                 mean_squared_error(
                     y_test,
                     y_pred
                 )
-            )
-        })
-
-    results_df = pd.DataFrame(results)
-
-    st.dataframe(
-        results_df,
-        use_container_width=True
+            ),
+            4
+        )
     )
 
 # =====================================
-# DIET RECOMMENDATION
+# DIET RECOMMENDATION DEMO
 # =====================================
 elif menu == "Diet Recommendation Demo":
     st.title("Diet Recommendation Demo")
@@ -424,7 +450,6 @@ elif menu == "Diet Recommendation Demo":
 
         st.subheader("🍽 Recommended Diet Menu")
 
-        # food recommendation logic
         recommended_meals = food_df[
             (food_df["Caloric Value"] <= predicted_calories / 4) &
             (food_df["Protein"] >= 10) &
