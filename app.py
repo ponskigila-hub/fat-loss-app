@@ -36,7 +36,7 @@ st.markdown("""
 }
 
 div[data-testid="stMetric"] {
-    background: white;
+    background: #1B4332;
     border: 2px solid #95D5B2;
     border-radius: 12px;
     padding: 15px;
