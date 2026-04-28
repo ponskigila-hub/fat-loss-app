@@ -277,8 +277,7 @@ elif menu == 'Diet Recommendation Demo':
 
         recommended_meals = df[
             (df['Calories'] <= predicted_calories) &
-            (df['Proteins'] >= 20) &
-            (df['is_healthy'] == True)
+            (df['Proteins'] >= 20)
         ]
 
         st.dataframe(
