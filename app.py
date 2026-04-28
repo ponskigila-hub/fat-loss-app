@@ -284,12 +284,12 @@ elif menu == 'Diet Recommendation Demo':
         # safer column selection (avoid KeyError if some columns do not exist)
         display_columns = [
             col for col in [
-                'Food_Item',
-                'meal_type',
-                'Calories',
-                'Proteins',
-                'Carbs',
-                'Fats'
+                'food_name',
+                'category',
+                'calories',
+                'protein',
+                'carbs',
+                'fat'
             ] if col in recommended_meals.columns
         ]
 
