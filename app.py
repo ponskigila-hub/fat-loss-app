@@ -284,7 +284,7 @@ elif menu == 'Diet Recommendation Demo':
         recommended_meals = food_df[
             (food_df['calories'] <= predicted_calories/4) &
             (food_df['protein'] >= 10)
-        ].sort_values(by='Proteins', ascending=False)
+        ].sort_values(by='protein', ascending=False)
 
         # safer column selection (avoid KeyError if some columns do not exist)
         display_columns = [
