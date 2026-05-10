@@ -589,7 +589,7 @@ elif st.session_state.page == "EDA":
             x=df[selected_feature].values,
             y=df[target].values,
             ax=ax,
-            scatter_kws={"alpha": 0.45, "color": "#52B788", "s": 22, "edgecolor": "white", "linewidth": 0.4},
+            scatter_kws={"alpha": 0.45, "facecolor": "#52B788", "s": 22, "edgecolor": "white", "linewidth": 0.4},
             line_kws={"color": "#E76F51", "linewidth": 2},
         )
         ax.set_xlabel(selected_feature, fontsize=10)
