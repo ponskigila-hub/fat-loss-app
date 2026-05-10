@@ -266,27 +266,27 @@ hr {
 }
 
 .macro-pill.kcal {
-    background: #FFF3E0;
-    color: #E65100;
-    border-color: #FFCC80;
+    background: #FEF3E8;
+    color: #C4571A;
+    border-color: #F4C094;
 }
 
 .macro-pill.protein {
-    background: #E3F2FD;
-    color: #1565C0;
-    border-color: #90CAF9;
+    background: #EAF4EE;
+    color: #1B4332;
+    border-color: #95D5B2;
 }
 
 .macro-pill.fat {
-    background: #FFF8E1;
-    color: #F57F17;
-    border-color: #FFE082;
+    background: #FDF5E6;
+    color: #A0522D;
+    border-color: #E8C98A;
 }
 
 .macro-pill.fiber {
-    background: #E8F5E9;
-    color: #2E7D32;
-    border-color: #A5D6A7;
+    background: #D8F3DC;
+    color: #2D6A4F;
+    border-color: #74C69D;
 }
 
 /* ── Page subtitle ── */
@@ -582,22 +582,22 @@ elif st.session_state.page == "EDA":
         st.pyplot(fig, use_container_width=True)
 
     with tab4:
-        col_a, col_b = st.columns([1, 3])
-        with col_a:
-            selected_feature = st.selectbox("X-axis feature", features)
-        with col_b:
-            fig, ax = plt.subplots(figsize=(8, 4))
-            sns.regplot(
-                x=df[selected_feature], y=df[target], ax=ax,
-                scatter_kws={"alpha": 0.45, "color": "#52B788", "s": 22, "edgecolor": "white", "linewidth": 0.4},
-                line_kws={"color": "#E76F51", "linewidth": 2},
-            )
-            ax.set_xlabel(selected_feature, fontsize=10)
-            ax.set_ylabel("Calories", fontsize=10)
-            ax.set_title(f"{selected_feature} vs Calories", fontweight="bold",
-                         fontsize=11, color="#1B4332")
-            plt.tight_layout()
-            st.pyplot(fig, use_container_width=True)
+        selected_feature = st.selectbox("X-axis feature", features)
+        set_plot_style()
+        fig, ax = plt.subplots(figsize=(10, 4.5))
+        sns.regplot(
+            x=df[selected_feature].values,
+            y=df[target].values,
+            ax=ax,
+            scatter_kws={"alpha": 0.45, "color": "#52B788", "s": 22, "edgecolor": "white", "linewidth": 0.4},
+            line_kws={"color": "#E76F51", "linewidth": 2},
+        )
+        ax.set_xlabel(selected_feature, fontsize=10)
+        ax.set_ylabel("Calories", fontsize=10)
+        ax.set_title(f"{selected_feature} vs Calories", fontweight="bold",
+                     fontsize=11, color="#1B4332")
+        plt.tight_layout()
+        st.pyplot(fig, use_container_width=True)
 
 
 # =====================================
@@ -625,8 +625,8 @@ elif st.session_state.page == "Preprocessing":
             )
 
     st.markdown(f"""
-    <div style='background:#E8F5E9;border:1.5px solid #A5D6A7;border-radius:12px;
-                padding:0.9rem 1.2rem;margin:1rem 0;font-size:0.88rem;color:#2E7D32;'>
+    <div style='background:#EAF4EE;border:1.5px solid #95D5B2;border-radius:12px;
+                padding:0.9rem 1.2rem;margin:1rem 0;font-size:0.88rem;color:#1B4332;'>
     ℹ️ This will split <strong>{len(df):,} records</strong> into
     <strong>{int(len(df)*(1-test_size/100)):,} training</strong> and
     <strong>{int(len(df)*test_size/100):,} test</strong> samples, then apply
@@ -746,13 +746,13 @@ elif st.session_state.page == "Model":
                   <div style='font-size:0.7rem;color:#557A62;font-weight:600;text-transform:uppercase;'>R²</div>
                   <div style='font-size:1.15rem;font-weight:700;color:#2D6A4F;'>{r["R²"]}</div>
                 </div>
-                <div style='background:#FFF3E0;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:60px;'>
+                <div style='background:#FEF3E8;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:60px;'>
                   <div style='font-size:0.7rem;color:#8D6E63;font-weight:600;text-transform:uppercase;'>MAE</div>
-                  <div style='font-size:1.15rem;font-weight:700;color:#E65100;'>{r["MAE"]}</div>
+                  <div style='font-size:1.15rem;font-weight:700;color:#C4571A;'>{r["MAE"]}</div>
                 </div>
-                <div style='background:#F3E5F5;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:60px;'>
-                  <div style='font-size:0.7rem;color:#7B1FA2;font-weight:600;text-transform:uppercase;'>RMSE</div>
-                  <div style='font-size:1.15rem;font-weight:700;color:#6A1B9A;'>{r["RMSE"]}</div>
+                <div style='background:#FDF5E6;border-radius:8px;padding:6px 12px;text-align:center;flex:1;min-width:60px;'>
+                  <div style='font-size:0.7rem;color:#A0522D;font-weight:600;text-transform:uppercase;'>RMSE</div>
+                  <div style='font-size:1.15rem;font-weight:700;color:#A0522D;'>{r["RMSE"]}</div>
                 </div>
               </div>
             </div>
@@ -854,7 +854,7 @@ elif st.session_state.page == "Prediction":
         fig, ax = plt.subplots(figsize=(7, 2.2))
         bar_data = [predicted_calories, final_calories]
         bar_labels = ["Maintenance", "Fat Loss Target"]
-        bar_colors = ["#52B788", "#E76F51"]
+        bar_colors = ["#52B788", "#F4A261"]
         bars = ax.barh(bar_labels, bar_data, color=bar_colors,
                        height=0.45, edgecolor="white", linewidth=0.5, zorder=3)
         for bar, val in zip(bars, bar_data):
@@ -907,7 +907,7 @@ elif st.session_state.page == "Prediction":
             fig2, ax2 = plt.subplots(figsize=(4, 4))
             macro_vals = [top["Protein"], top["Carbohydrates"], top["Fat"], top["Dietary Fiber"]]
             macro_labels = ["Protein", "Carbs", "Fat", "Fiber"]
-            macro_colors = ["#2196F3", "#FF9800", "#F44336", "#4CAF50"]
+            macro_colors = ["#2D6A4F", "#52B788", "#E76F51", "#95D5B2"]
             wedges, texts, autotexts = ax2.pie(
                 macro_vals, labels=macro_labels, colors=macro_colors,
                 autopct="%1.1f%%", startangle=90,
