@@ -473,7 +473,7 @@ if st.session_state.page == "Home":
 
     with col_l:
         st.subheader("Dataset Preview")
-        st.dataframe(df.head(8), use_container_width=True, height=280)
+        st.dataframe(df.head(8), width="stretch", height=280)
 
     with col_r:
         st.subheader("Quick Stats")
@@ -534,10 +534,10 @@ elif st.session_state.page == "EDA":
         col_l, col_r = st.columns([3, 2])
         with col_l:
             st.subheader("Dataset Preview")
-            st.dataframe(df.head(10), use_container_width=True)
+            st.dataframe(df.head(10), width="stretch")
         with col_r:
             st.subheader("Statistical Summary")
-            st.dataframe(df[features + [target]].describe().round(2), use_container_width=True)
+            st.dataframe(df[features + [target]].describe().round(2), width="stretch")
 
     with tab2:
         selected_features = st.multiselect(
@@ -589,7 +589,7 @@ elif st.session_state.page == "EDA":
             x=df[selected_feature].values,
             y=df[target].values,
             ax=ax,
-            scatter_kws={"alpha": 0.45, "facecolor": "#52B788", "s": 22, "edgecolor": "white", "linewidth": 0.4},
+            scatter_kws={"alpha": 0.45, "facecolor": "#52B788", "s": 22, "edgecolor": "white", "linewidths": 0.4},
             line_kws={"color": "#E76F51", "linewidth": 2},
         )
         ax.set_xlabel(selected_feature, fontsize=10)
@@ -634,7 +634,7 @@ elif st.session_state.page == "Preprocessing":
     </div>
     """, unsafe_allow_html=True)
 
-    if st.button("▶  Run Preprocessing", use_container_width=False):
+    if st.button("▶  Run Preprocessing"):
         X = df[features]
         y = df[target]
 
@@ -660,7 +660,7 @@ elif st.session_state.page == "Preprocessing":
             st.markdown("**Scaled Training Sample (first 5 rows)**")
             st.dataframe(
                 pd.DataFrame(X_train_scaled[:5], columns=features).round(4),
-                use_container_width=True
+                width="stretch"
             )
         with col_r:
             st.markdown("**Split Summary**")
@@ -669,7 +669,7 @@ elif st.session_state.page == "Preprocessing":
                 "Records": [len(X_train), len(X_test)],
                 "Share (%)": [100 - test_size, test_size]
             })
-            st.dataframe(split_df, use_container_width=True, hide_index=True)
+            st.dataframe(split_df, width="stretch", hide_index=True)
 
 
 # =====================================
@@ -690,7 +690,7 @@ elif st.session_state.page == "Model":
         help="You can compare multiple models side-by-side."
     )
 
-    if st.button("🚀  Train & Evaluate", use_container_width=False):
+    if st.button("🚀  Train & Evaluate"):
         if not selected_models:
             st.warning("Select at least one model.")
         else:
@@ -829,7 +829,7 @@ elif st.session_state.page == "Prediction":
 
     st.markdown("---")
 
-    if st.button("🔍  Generate Recommendation", use_container_width=False):
+    if st.button("🔍  Generate Recommendation"):
 
         input_data = np.array([[age, weight, height, bmi, fat_percentage]])
         input_scaled = scaler.transform(input_data)
