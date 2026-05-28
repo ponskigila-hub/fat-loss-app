@@ -5,6 +5,9 @@ A machine learning web application that predicts **maintenance calories** and pr
 Built with **Streamlit**, **Scikit-learn**, **Pandas**, **Matplotlib**, and **Seaborn**, this project implements a full ML pipeline: data exploration, preprocessing, model training, evaluation, and recommendation system.
 
 ---
+# Deployment
+https://fat-loss-app-n.streamlit.app/ 
+
 
 # 🚀 Features
 
