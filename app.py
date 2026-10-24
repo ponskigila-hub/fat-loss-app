@@ -86,7 +86,20 @@ def load_food_data():
     return pd.read_csv("FOOD-DATA-GROUP5.csv")
 
 
-df = load_main_data()
+def add_engineered_features(data):
+    """Derive body-composition features from the raw metrics.
+
+    Lean mass drives basal metabolic rate (e.g. Katch-McArdle), so splitting
+    body weight into lean and fat mass gives the models more direct signal
+    than weight and fat percentage separately.
+    """
+    data = data.copy()
+    data["Fat_Mass_kg"] = data["Weight (kg)"] * data["Fat_Percentage"] / 100
+    data["Lean_Mass_kg"] = data["Weight (kg)"] - data["Fat_Mass_kg"]
+    return data
+
+
+df = add_engineered_features(load_main_data())
 food_df = load_food_data()
 
 st.session_state.df = df
@@ -97,7 +110,9 @@ features = [
     "Weight (kg)",
     "Height (m)",
     "BMI",
-    "Fat_Percentage"
+    "Fat_Percentage",
+    "Lean_Mass_kg",
+    "Fat_Mass_kg"
 ]
 
 target = "Calories"
@@ -734,6 +749,14 @@ elif st.session_state.page == "Prediction":
     with open("scaler.pkl", "rb") as f:
         scaler = pickle.load(f)
 
+    if scaler.n_features_in_ != len(features):
+        st.warning(
+            "⚠️ The saved model was trained on a different feature set. "
+            "Please retrain and save it again."
+        )
+
+        st.stop()
+
     section_divider("Body Metrics")
 
     col1, col2, col3 = st.columns(3)
@@ -790,13 +813,15 @@ elif st.session_state.page == "Prediction":
 
     if st.button("🔍 Generate Recommendation"):
 
-        input_data = np.array([[
-            age,
-            weight,
-            height,
-            bmi,
-            fat_percentage
-        ]])
+        input_data = add_engineered_features(
+            pd.DataFrame([{
+                "Age": age,
+                "Weight (kg)": weight,
+                "Height (m)": height,
+                "BMI": bmi,
+                "Fat_Percentage": fat_percentage
+            }])
+        )[features]
 
         input_scaled = scaler.transform(input_data)
 
