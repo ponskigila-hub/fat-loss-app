@@ -1,77 +1,130 @@
-# 🥗 Fat Loss Diet Recommendation System (Streamlit ML App)
+# 🥗 FatLoss AI — Calorie & Diet Recommendation System
 
-A machine learning web application that predicts **maintenance calories** and provides **personalized fat-loss meal recommendations** based on user body metrics.
+A Streamlit ML app that predicts **maintenance calories** from body metrics and recommends **high-protein, low-sugar meals** for a chosen calorie deficit.
 
-Built with **Streamlit**, **Scikit-learn**, **Pandas**, **Matplotlib**, and **Seaborn**, this project implements a full ML pipeline: data exploration, preprocessing, model training, evaluation, and recommendation system.
+**Live demo:** https://fat-loss-app-n.streamlit.app/
 
----
-
-## 🌐 Deployment
-**Live Demo:** [https://fat-loss-app-n.streamlit.app/](https://fat-loss-app-n.streamlit.app/)
+The app walks through a complete ML workflow in five pages: **Dashboard → Explore Data (EDA) → Preprocessing → Train Model → Recommendation.**
 
 ---
 
 ## Table of Contents
 - [Problem Statement](#problem-statement)
 - [Datasets](#datasets)
-- [Methodology](#methodology)
-- [Results & Metrics](#results--metrics)
-- [How to Run](#how-to-run)
-- [Features](#features)
+- [Workflow](#workflow)
+- [Feature Engineering](#feature-engineering)
+- [Models & Evaluation](#models--evaluation)
 - [Recommendation Logic](#recommendation-logic)
+- [How to Run](#how-to-run)
 - [Project Structure](#project-structure)
 - [Limitations & Future Improvements](#limitations--future-improvements)
 
 ---
 
-## 🎯 Problem Statement
-Achieving a caloric deficit for weight loss often requires tedious manual calculations and generic meal planning that ignores individual body compositions. This project solves that problem by leveraging Machine Learning to predict personalized maintenance calories based on specific body metrics (Age, Weight, Height, BMI, Body Fat Percentage). Furthermore, it acts as a dietary assistant by instantly filtering and recommending high-protein, low-sugar meals tailored to the user's predicted caloric deficit target.
+## Problem Statement
+Working out a calorie deficit by hand is tedious, and generic meal plans ignore individual body composition. This project predicts a person's maintenance calories from Age, Weight, Height, BMI and Body Fat %, applies a user-chosen deficit (1–25%), and filters a nutrition database for meals that fit.
 
 ---
 
-## 📂 Datasets
-This application relies on two primary datasets:
-1. **`Final_data.csv` (User Metrics):** Used for training the regression models. 
-   - *Features:* `Age`, `Weight (kg)`, `Height (m)`, `BMI`, `Fat_Percentage`
-   - *Target:* `Calories` (Maintenance caloric need)
-2. **`FOOD-DATA-GROUP5.csv` (Nutritional Database):** Used for the rule-based recommendation engine. Contains meal names, caloric values, macronutrients (Protein, Fat, Carbs), and sugar content.
+## Datasets
+
+| File | Rows | Used for |
+|---|---|---|
+| `Final_data.csv` | 20,000 | Training the regression models |
+| `FOOD-DATA-GROUP5.csv` | 722 | Rule-based meal recommendation |
+
+**Model inputs (7 features):** five raw columns from `Final_data.csv` — `Age`, `Weight (kg)`, `Height (m)`, `BMI`, `Fat_Percentage` — plus two derived features, `Fat_Mass_kg` and `Lean_Mass_kg` (see [Feature Engineering](#feature-engineering)).
+**Target:** `Calories` (daily calorie need)
+
+> **Data note:** `Final_data.csv` is a 54-column merged file. Only the five raw columns above and `Calories` are used by the app; the other columns are not used. No cleaning step is applied because the file contains no missing values or duplicate rows.
+> <!-- TODO (edit before pushing): state where Final_data.csv comes from (source/link, or how you built it). -->
 
 ---
 
-## 🧠 Methodology
+## Workflow
 
-### 1. Data Preprocessing & EDA
-- **Exploratory Data Analysis:** Visualizing feature distributions, correlation heatmaps, and feature-to-target regression plots.
-- **Data Scaling:** Offering user-selectable scaling methods (`StandardScaler` or `MinMaxScaler`) to normalize body metrics before feeding them into the models.
-- **Data Splitting:** Configurable Train-Test split ratios.
-
-### 2. Machine Learning Pipeline
-Training regression models to predict maintenance calories:
-- **Linear Regression**
-- **Random Forest Regressor**
-- **Support Vector Regression (SVR)**
-
-### 3. Recommendation System
-A rule-based filtering algorithm that takes the predicted maintenance calories, calculates a fat-loss deficit, and queries the food database for meals matching strict nutritional constraints.
+1. **Explore Data (EDA)** — summary statistics, feature distributions, correlation matrix, and feature-vs-calories scatter plots.
+2. **Preprocessing** — derived body-composition features are added on load (see below), then a configurable train/test split and a choice of `StandardScaler` or `MinMaxScaler` (scaler is fit on the training set only).
+3. **Train Model** — train and compare Linear Regression, Random Forest Regressor and SVR; the best model and its scaler are saved as `MainModel.pkl` / `scaler.pkl`.
+4. **Recommendation** — enter body metrics, predict maintenance calories, apply the deficit, and get meal suggestions plus rule-based health notes.
 
 ---
 
-## 📊 Results & Metrics
-Models are evaluated in real-time based on the user's preprocessing configuration. The evaluation metrics used are:
-- **R² Score:** Evaluates how well the model fits the variance of the calorie data.
-- **MAE (Mean Absolute Error):** The average absolute difference between predicted and actual calories.
-- **MSE (Mean Squared Error):** Penalizes larger prediction errors.
-- **RMSE (Root Mean Squared Error):** Represents the error magnitude in original unit (Calories).
+## Feature Engineering
 
-The best-performing model is saved as `MainModel.pkl` along with its `scaler.pkl` for immediate inference in the recommendation engine.
+Two features are derived from the raw metrics in `add_engineered_features()` (`app.py`):
+
+```
+Fat_Mass_kg  = Weight (kg) × Fat_Percentage / 100
+Lean_Mass_kg = Weight (kg) − Fat_Mass_kg
+```
+
+**Why:** basal metabolic rate depends mainly on lean mass (e.g. the Katch-McArdle formula), so splitting body weight into lean and fat mass gives the models a more direct signal than weight and fat percentage separately.
+
+The same function is applied to the training data **and** to the user's input at prediction time, so the model always receives identical features. A model saved before this change is detected (feature-count mismatch) and the app asks you to retrain.
 
 ---
 
-## 💻 How to Run
+## Models & Evaluation
+
+Models: **Linear Regression**, **Random Forest Regressor** (`random_state=42`), **Support Vector Regression (SVR)**.
+Metrics reported in the app: **R², MAE, MSE, RMSE**.
+
+**Results** (80/20 split, `random_state=42`, `StandardScaler`, test set):
+
+| Model | Raw 5 features | + Fat/Lean mass (7 features) |
+|---|---|---|
+| Linear Regression | R² 0.9565 · MAE 90.2 | R² 0.9569 · MAE 89.7 |
+| Random Forest | R² 0.9575 · MAE 89.3 | R² 0.9574 · MAE 89.4 |
+| SVR | R² 0.8792 · MAE 135.8 | R² 0.8972 · MAE 127.2 |
+
+The derived features make almost no difference for Linear Regression and Random Forest, and give a modest gain for SVR (R² +0.018, MAE −8.6). The scores are high mainly because `Weight (kg)` alone correlates ≈ 0.98 with the target, so treat them as a demonstration of the workflow rather than evidence of strong generalisation.
+
+---
+
+## Recommendation Logic
+
+Rule-based filtering on `FOOD-DATA-GROUP5.csv`:
+
+```
+final_calories = predicted_maintenance × (1 − deficit%)
+
+keep meals where:
+    Caloric Value <= final_calories / 4     (assumes 4 meals per day)
+    Protein       >= 10
+    Sugars        <= 10
+sort by Nutrition Density, then Protein (descending) → show top 6
+```
+
+The "Health Insights" cards are hand-written rules based on BMI, body-fat % and the final calorie target (for example, a warning when the target is below 1,200 kcal or BMI is under 18.5). They are not generated by a model.
+
+---
+
+## How to Run
 
 **Prerequisites:** Python 3.8+
 
-**1. Clone the repository and navigate to the directory**
 ```bash
-git clone <your-repo-link>
-cd <project-folder>
+git clone https://github.com/ponskigila-hub/fat-loss-app.git
+cd fat-loss-app
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+Open http://localhost:8501. Train and save a model on the **Train Model** page before using **Recommendation**.
+
+---
+
+## Project Structure
+
+```
+fat-loss-app/
+├── app.py                  # Streamlit app: pages, data loading, training, recommendation
+├── ui.py                   # Custom CSS and UI components (cards, sidebar, insights)
+├── Final_data.csv          # Training data (user metrics + target calories)
+├── FOOD-DATA-GROUP5.csv    # Nutrition database for recommendations
+├── requirements.txt
+└── .devcontainer/
+```
+
+---
